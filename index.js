@@ -1,27 +1,29 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const cors = require("cors");
-
+const express = require('express');
+const fetch = require('node-fetch');
 const app = express();
-app.use(cors());
 
-app.get("/fetch", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send("Missing URL");
+const PORT = process.env.PORT || 3000;
+
+app.get('/fetch', async (req, res) => {
+  const targetUrl = req.query.url;
+
+  if (!targetUrl) {
+    return res.status(400).send('Missing URL');
+  }
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      },
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
     });
-
-    const text = await response.text();
-    res.send(text);
+    const html = await response.text();
+    res.send(html);
   } catch (error) {
-    res.status(500).send("Fetch error: " + error.message);
+    res.status(500).send('Error fetching: ' + error.message);
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+});
