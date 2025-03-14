@@ -1,29 +1,42 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
 const app = express();
 
-const PORT = process.env.PORT || 3000;
-
-app.get('/fetch', async (req, res) => {
+app.get('/scrape', async (req, res) => {
   const targetUrl = req.query.url;
+  if (!targetUrl) return res.status(400).send('No URL provided');
 
-  if (!targetUrl) {
-    return res.status(400).send('Missing URL');
-  }
-
+  let browser;
   try {
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-      }
+    browser = await puppeteer.launch({
+      args: ['--no-sandbox'],
+      headless: 'new',
     });
-    const html = await response.text();
-    res.send(html);
-  } catch (error) {
-    res.status(500).send('Error fetching: ' + error.message);
+
+    const page = await browser.newPage();
+    await page.goto(targetUrl, { waitUntil: 'networkidle2' });
+
+    // Ждём, пока загрузятся лайки и просмотры
+    await page.waitForSelector('[aria-label$="appreciations"]', { timeout: 10000 });
+    await page.waitForSelector('[aria-label$="views"]', { timeout: 10000 });
+
+    const result = await page.evaluate(() => {
+      const likesElem = document.querySelector('[aria-label$="appreciations"]');
+      const viewsElem = document.querySelector('[aria-label$="views"]');
+
+      const likes = likesElem?.getAttribute('aria-label')?.match(/\d[\d., ]*/)?.[0] || 'нет';
+      const views = viewsElem?.getAttribute('aria-label')?.match(/\d[\d., ]*/)?.[0] || 'нет';
+
+      return { views, likes };
+    });
+
+    res.json(result);
+  } catch (e) {
+    res.status(500).send('Error scraping: ' + e.message);
+  } finally {
+    if (browser) await browser.close();
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Server running on port', PORT));
