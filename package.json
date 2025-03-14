@@ -1,13 +1,12 @@
 {
-  "name": "behance-proxy",
+  "name": "behance-scraper",
   "version": "1.0.0",
-  "description": "Proxy for fetching Behance pages",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^2.6.1"
+    "puppeteer": "^21.3.8"
   }
 }
