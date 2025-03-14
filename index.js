@@ -1,6 +1,8 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const app = express();
+
+const chromium = require('@sparticuz/chromium'); // Railway поддерживает эту сборку
 
 app.get('/scrape', async (req, res) => {
   const targetUrl = req.query.url;
@@ -9,14 +11,15 @@ app.get('/scrape', async (req, res) => {
   let browser;
   try {
     browser = await puppeteer.launch({
-      args: ['--no-sandbox'],
-      headless: 'new',
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
     await page.goto(targetUrl, { waitUntil: 'networkidle2' });
 
-    // Ждём, пока загрузятся лайки и просмотры
     await page.waitForSelector('[aria-label$="appreciations"]', { timeout: 10000 });
     await page.waitForSelector('[aria-label$="views"]', { timeout: 10000 });
 
